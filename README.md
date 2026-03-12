@@ -6,11 +6,15 @@ Not logging. Not alerting. Blocking.
 
 ---
 
-## Live Demo
+## Live
 
-**[agenticrail-demo.pages.dev](https://agenticrail-demo.pages.dev)**
+**[agenticrail.nz](https://agenticrail.nz)** — landing page  
+**[agenticrail.nz/docs](https://agenticrail.nz/docs)** — full API documentation  
+**[agenticrail.nz/evaluate](https://agenticrail.nz/evaluate)** — gate endpoint  
 
-No login. No setup. Run all four enforcement scenarios — including a custom attack panel where you control the payload — against the live gate right now.
+Demo key (public, live): `DEMO-AGENTICRAIL-PUBLIC-2026`
+
+No login. No setup. Hit the gate right now.
 
 ---
 
@@ -67,7 +71,7 @@ Internet
                ▼
 ┌─────────────────────────────┐
 │  Durable Object              │
-│  · Per-sequence state        │
+│  · Per-key, per-sequence     │
 │  · Globally consistent       │
 │  · Sub-150ms at edge         │
 └─────────────────────────────┘
@@ -83,7 +87,7 @@ This is not a software rule. It is an architectural guarantee. Even a compromise
 
 ## API
 
-**Endpoint:** `POST https://slp8-gate.o1ooo1.workers.dev/evaluate`
+**Endpoint:** `POST https://agenticrail.nz/evaluate`
 
 **Headers:**
 ```
@@ -139,6 +143,8 @@ x-slp8-key: YOUR_API_KEY
 | `SEQUENCE_VIOLATION` | Step sent out of order |
 | `REPLAY_NONCE` | Nonce already used |
 | `SEALED_SEQUENCE` | Sequence already completed and closed |
+
+Full field reference and quickstart examples at **[agenticrail.nz/docs](https://agenticrail.nz/docs)**.
 
 ---
 
@@ -204,15 +210,15 @@ Follow the build at **[AgenticRail on Substack](https://msmdnwortopknotthinking.
 | Gate Worker | ✅ Live |
 | Core Worker | ✅ Live (private) |
 | Demo UI | ✅ Live |
-| Custom Attack Panel | ✅ Live |
-| Multi-tenant key isolation | 🔧 In design |
+| Developer Docs | ✅ Live |
+| Per-key sequence isolation | ✅ Live |
 | Observability dashboard | 🔧 Planned |
 
 ---
 
 ## Contact
 
-**hello@agenticrail.com**
+**hello@agenticrail.nz**
 
 If you're building agentic AI in production — especially in a regulated environment — I'd like to know what your current enforcement story looks like.
 
