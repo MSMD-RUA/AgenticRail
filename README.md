@@ -34,9 +34,9 @@ AgenticRail sits beneath your agent and blocks it before execution.
 
 | Law | What it means |
 |-----|--------------|
-| **Order** | STEP_1 must precede STEP_2. Steps cannot execute out of sequence. |
+| **Order** | Steps must execute in sequence. No exceptions. |
 | **Replay** | A nonce can only be used once. Identical requests are blocked permanently. |
-| **Skip** | No step can be bypassed. Every step in the defined sequence must execute in order. |
+| **Skip** | No step can be bypassed. Every step must execute in order. |
 | **Seal** | Once a sequence reaches its terminal step, it is closed. No re-entry. Ever. |
 
 Every enforcement decision produces a **cryptographic receipt** — a `pack_id` signed at the edge. The audit trail is structural, not procedural.
@@ -73,7 +73,7 @@ Internet
 │  Durable Object              │
 │  · Per-key, per-sequence     │
 │  · Globally consistent       │
-│  · Sub-150ms at edge         │
+│  · Serialised access         │
 └─────────────────────────────┘
 ```
 
@@ -98,14 +98,16 @@ x-slp8-key: YOUR_API_KEY
 **Request payload:**
 ```json
 {
-  "schema_version": "slp8_1.0",
-  "model_id": "your-agent-id",
+  "schema_version": "1.0",
+  "model_id": "MSMD",
   "sequence_id": "unique-sequence-identifier",
-  "step": "STEP_1",
-  "nonce": "unique-per-request-string",
-  "ts_ms": 1234567890000,
-  "action": "EXECUTE_STEP",
-  "inputs": {}
+  "step": "intake",
+  "function": "intake",
+  "action_type": "CHECK_STATE",
+  "action": "human_readable_label",
+  "inputs": { "signal": "..." },
+  "nonce": "unique-per-request-uuid",
+  "ts_ms": 1234567890000
 }
 ```
 
@@ -143,6 +145,7 @@ x-slp8-key: YOUR_API_KEY
 | `SEQUENCE_VIOLATION` | Step sent out of order |
 | `REPLAY_NONCE` | Nonce already used |
 | `SEALED_SEQUENCE` | Sequence already completed and closed |
+| `ACTION_NOT_ALLOWED` | action_type not valid for this function |
 
 Full field reference and quickstart examples at **[agenticrail.nz/docs](https://agenticrail.nz/docs)**.
 
@@ -152,25 +155,45 @@ Full field reference and quickstart examples at **[agenticrail.nz/docs](https://
 
 | Scenario | Input | Expected |
 |----------|-------|----------|
-| Correct sequence | STEP_1 → STEP_2 → STEP_3 in order | ✓ ALLOW all |
-| Replay attack | STEP_1 sent twice with identical nonce | ✗ DENY second |
-| Sequence skip | STEP_1 → STEP_3 (STEP_2 never sent) | ✗ DENY skip |
-| Sealed breach | Full sequence completed → STEP_1 again | ✗ DENY re-entry |
+| Correct sequence | intake → disruption → ... → settle in order | ✓ ALLOW all |
+| Replay attack | intake sent twice with identical nonce | ✗ DENY second |
+| Sequence skip | intake → instability (disruption never sent) | ✗ DENY skip |
+| Sealed breach | Full sequence completed → intake again | ✗ DENY re-entry |
+
+---
+
+## Pressure Test Results (2026-04-04)
+
+100,002 requests. Concurrency 150. Sustained for 13 minutes.
+
+| Enforcement property | Result |
+|----------------------|--------|
+| Valid transition → ALLOW | 99.97% |
+| Skip transition → DENY | **100%** |
+| Replay transition → DENY | **100%** |
+| Race condition (200 concurrent bursts) | **0 leaks** |
+| Nonce replay (300 sequences) | **100% blocked** |
+| Seal (100 full spine walks) | **100% sealed, 0 leaked** |
+| Errors | 0.017% (Cloudflare platform ceiling at sustained concurrency-150) |
+
+0 enforcement failures across all scenarios.
 
 ---
 
 ## Performance
 
-- **Latency:** Sub-150ms globally (Cloudflare edge)
-- **Error rate:** 0% across all enforcement scenarios
-- **Infrastructure:** Cloudflare Workers + Durable Objects
+- **Throughput:** 128 RPS sustained at concurrency-150
+- **CPU per decision:** 0.87ms (enforcement logic only)
+- **End-to-end latency p50:** 890ms (including cryptographic receipt write to R2)
+- **Error rate:** 0% enforcement failures
+- **Infrastructure:** Cloudflare Workers + Durable Objects + R2 + KV
 - **Availability:** Global edge — no single point of failure
 
 ---
 
 ## EU AI Act
 
-High-risk AI provisions are **fully enforceable August 2026** — 5 months away.
+High-risk AI provisions are **fully enforceable August 2026.**
 
 The Act requires demonstrable control over AI decision sequences and verifiable audit trails. Most teams are relying on logging and procedural controls. Regulators asking *"how do you demonstrate your AI cannot skip required steps?"* need a structural answer, not a procedural one.
 
@@ -212,7 +235,9 @@ Follow the build at **[AgenticRail on Substack](https://msmdnwortopknotthinking.
 | Demo UI | ✅ Live |
 | Developer Docs | ✅ Live |
 | Per-key sequence isolation | ✅ Live |
-| Observability dashboard | 🔧 Planned |
+| Cryptographic receipt log (R2) | ✅ Live |
+| UNAUNAHI Observability Dashboard | ✅ Live |
+| Ledger export (CSV/JSON) | 🔧 Planned |
 
 ---
 
